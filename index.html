@@ -1,0 +1,186 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Sistem Pengingat Tugas</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 0;
+            padding: 0;
+            background-color: #f4f4f4;
+        }
+        .container {
+            width: 80%;
+            margin: auto;
+            overflow: hidden;
+            padding: 20px;
+            background: white;
+            box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+            margin-top: 50px;
+        }
+        h1 {
+            text-align: center;
+            color: #333;
+        }
+        form {
+            margin: 20px 0;
+        }
+        label {
+            display: block;
+            margin: 10px 0 5px;
+        }
+        input, button {
+            width: 100%;
+            padding: 10px;
+            margin: 10px 0;
+            border: 1px solid #ccc;
+            border-radius: 5px;
+        }
+        button {
+            background-color: #007bff;
+            color: white;
+            border: none;
+            cursor: pointer;
+        }
+        button:hover {
+            background-color: #0056b3;
+        }
+        .agenda-list {
+            margin: 20px 0;
+        }
+        .agenda-item {
+            background: #f9f9f9;
+            margin: 10px 0;
+            padding: 10px;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Sistem Pengingat Tugas</h1>
+
+        <form id="agendaForm">
+            <label for="agenda">Nama Agenda:</label>
+            <input type="text" id="agenda" name="agenda" required>
+
+            <label for="tanggal">Tanggal:</label>
+            <input type="date" id="tanggal" name="tanggal" required>
+
+            <label for="waktu">Waktu:</label>
+            <input type="time" id="waktu" name="waktu" required>
+
+            <button type="submit">Tambah Agenda</button>
+        </form>
+
+        <div class="agenda-list" id="agendaList">
+            <h2>Daftar Agenda</h2>
+            <p>Belum ada agenda yang ditambahkan.</p>
+        </div>
+    </div>
+
+    <script>
+        const agendaForm = document.getElementById('agendaForm');
+        const agendaList = document.getElementById('agendaList');
+
+        let agendas = [];
+
+        agendaForm.addEventListener('submit', function (e) {
+            e.preventDefault();
+
+            const agenda = document.getElementById('agenda').value;
+            const tanggal = document.getElementById('tanggal').value;
+            const waktu = document.getElementById('waktu').value;
+
+            const newAgenda = {
+                agenda,
+                tanggal,
+                waktu,
+            };
+
+            agendas.push(newAgenda);
+            saveToDatabase(newAgenda);
+            displayAgendas();
+            agendaForm.reset();
+        });
+
+        function displayAgendas() {
+            agendaList.innerHTML = '<h2>Daftar Agenda</h2>';
+
+            if (agendas.length === 0) {
+                agendaList.innerHTML += '<p>Belum ada agenda yang ditambahkan.</p>';
+                return;
+            }
+
+            agendas.forEach((agenda, index) => {
+                const agendaItem = document.createElement('div');
+                agendaItem.classList.add('agenda-item');
+                agendaItem.innerHTML = ` 
+                    <p><strong>Agenda:</strong> ${agenda.agenda}</p>
+                    <p><strong>Tanggal:</strong> ${agenda.tanggal}</p>
+                    <p><strong>Waktu:</strong> ${agenda.waktu}</p>
+                    <button onclick="removeAgenda(${index})">Hapus</button>
+                `;
+                agendaList.appendChild(agendaItem);
+            });
+        }
+
+        function checkAlarms() {
+            const now = new Date();
+
+            agendas.forEach((agenda) => {
+                const alarmTime = new Date(`${agenda.tanggal}T${agenda.waktu}`);
+
+                if (
+                    now.getFullYear() === alarmTime.getFullYear() &&
+                    now.getMonth() === alarmTime.getMonth() &&
+                    now.getDate() === alarmTime.getDate() &&
+                    now.getHours() === alarmTime.getHours() &&
+                    now.getMinutes() === alarmTime.getMinutes()
+                ) {
+                    playAlarm(agenda.agenda);
+                }
+            });
+        }
+
+        function removeAgenda(index) {
+            agendas.splice(index, 1);
+            displayAgendas();
+        }
+
+        function playAlarm(agendaName) {
+            const alarmSound = new Audio('alarm.mp3'); // Suara alarm
+            alarmSound.play();
+
+            // Optional: Show a notification or visual cue
+            const notification = document.createElement('div');
+            notification.classList.add('agenda-item');
+            notification.innerHTML = `<strong>Waktu untuk agenda:</strong> ${agendaName}`;
+            agendaList.prepend(notification);
+        }
+
+        function saveToDatabase(agenda) {
+            fetch('save_agenda.php', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify(agenda),
+            })
+            .then(response => response.json())
+            .then(data => {
+                console.log('Success:', data);
+            })
+            .catch((error) => {
+                console.error('Error:', error);
+            });
+        }
+
+        // Check alarms every minute
+        setInterval(checkAlarms, 60000);
+    </script>
+</body>
+</html>
